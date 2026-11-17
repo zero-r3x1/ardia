@@ -1,7 +1,23 @@
 param(
   [ValidateSet("x64", "ARM64")][string]$Cpu = "x64",
-  [string]$LogDirectory = ""
+  [string]$LogDirectory = "",
+  [switch]$Help
 )
+
+if ($Help) {
+  Write-Output @'
+Usage: build-local.ps1 [-Cpu x64|ARM64] [-LogDirectory <path>] [-Help]
+
+Runs Windows autolinking and a Release MSBuild build using installed Visual Studio
+Build Tools. MSBuild /restore downloads packages from configured NuGet feeds into
+the user's NuGet cache. Network access may be required.
+
+Logs default to apps/browser/build-windows-logs. -LogDirectory accepts a path
+outside the repository and creates it if needed. Existing log names may be reused.
+The script does not change execution policy; the host must permit local scripts.
+'@
+  exit 0
+}
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)

@@ -11,7 +11,7 @@ export function evaluate(facts) {
     ["msvc", Boolean(facts.vs), "Install Visual Studio 2022 or 2026 with MSBuild and Desktop development with C++ (x64/x86 tools). Use build-local.ps1 for Build Tools installations."],
     ["sdk", facts.sdk, `Install Windows SDK ${facts.expectedSdk}.`],
     ["dependencies", facts.dependencies, "Run pnpm install --frozen-lockfile."],
-    ["powershell", ["RemoteSigned", "Unrestricted", "Bypass"].includes(facts.policy), "Install PowerShell 7 and use a host whose policy permits local scripts with process-scoped RemoteSigned."],
+    ["powershell", ["RemoteSigned", "Unrestricted", "Bypass"].includes(facts.policy), "Install PowerShell 7 and use a host whose effective policy permits local unsigned scripts. This check does not override execution policy."],
     ["github-cli", facts.gh, "Install GitHub CLI for scripts/windows/fetch-engine.ps1."],
   ];
   return checks.map(([name, passed, remedy]) => ({ name, passed: Boolean(passed), remedy: passed ? null : remedy }));
@@ -40,7 +40,7 @@ export function inspect(root, run = spawnSync) {
     expectedSdk,
     sdk: ["um/Windows.h", "ucrt/stdio.h"].every((file) => existsSync(join(programs, "Windows Kits/10/Include", expectedSdk, file))) && existsSync(join(programs, "Windows Kits/10/Lib", expectedSdk, "um/x64/kernel32.lib")),
     dependencies: existsSync(join(root, "node_modules/react-native-windows/package.json")),
-    policy: output("pwsh.exe", ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "RemoteSigned", "-Command", "Get-ExecutionPolicy"]),
+    policy: output("pwsh.exe", ["-NoProfile", "-NonInteractive", "-Command", "Get-ExecutionPolicy"]),
     gh: Boolean(output("gh.exe", ["--version"])),
   };
 }
