@@ -12,6 +12,8 @@ import { ExtensionOverlays } from "./components/extensions/ExtensionOverlays";
 import { ExtensionSidePanel } from "./components/extensions/SidePanel";
 import { CrxDropArea } from "./components/extensions/CrxDropArea";
 import { DownloadMagnet, DownloadsPopover } from "./components/downloads/Downloads";
+import { DownloadIsland } from "./components/downloads/DownloadIsland";
+import { PLATFORM_FEATURES } from "./lib/platformFeatures";
 import { UtilityWindow } from "./components/settings/UtilityWindow";
 import { isUtilityWindowId } from "./state/settings/settingsWindows";
 import { OnboardingOverlay } from "./components/onboarding";
@@ -100,9 +102,10 @@ function BrowserWindow() {
       <CommandPanel windowWidth={width} />
       <WindowOverlays>
         <FolderMenus />
+        {PLATFORM_FEATURES.downloadIsland && <DownloadIsland top={(fullscreen ? 0 : Math.max(TOP_STRIP_HEIGHT, cardTop)) + 10} />}
         <DownloadsPopover />
         <ExtensionOverlays />
-        <DownloadMagnet />
+        {!PLATFORM_FEATURES.downloadIsland && <DownloadMagnet />}
         <BookmarkDialog />
         <EditBookmarkDialog />
         <CreateProfileHost />

@@ -10,6 +10,8 @@ import { CommandPanel } from "../omnibox/CommandPanel";
 import { ContentCard } from "../window/ContentCard";
 import { BrowserWindowControls } from "../window/BrowserWindowControls";
 import { DownloadsPopover } from "../downloads/Downloads";
+import { DownloadIsland } from "../downloads/DownloadIsland";
+import { PLATFORM_FEATURES } from "../../lib/platformFeatures";
 import { ExtensionOverlays } from "../extensions/ExtensionOverlays";
 import { ToolbarPopupAnchor } from "../extensions/ToolbarExtensions";
 import { setUrlAnchor, usePageFrameInset, windowCornerRadius } from "../../state/windows/layout";
@@ -83,6 +85,7 @@ export function LittleArdiaWindow() {
         </PinchArea>
       </Animated.View>
       <CommandPanel windowWidth={size.width} />
+      {PLATFORM_FEATURES.downloadIsland && <DownloadIsland top={(fullScreen ? 0 : BAR.height) + 10} />}
       <DownloadsPopover />
       <ExtensionOverlays />
       <BrowserWindowControls />

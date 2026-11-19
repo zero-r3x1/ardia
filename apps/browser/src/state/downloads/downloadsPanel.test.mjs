@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { PLATFORM_FEATURES } from "../../lib/platformFeatures.ts";
 const { useBrowser } = await import("../browser/store.ts");
 const { dismissDownloadsByPress, setDownloadsOpen, toggleDownloadsOpen } = await import("../windows/actions.ts");
 const { takeDownloadsPanelCounts } = await import("../telemetry/downloadsPanelCounts.ts");
+const { watchDownloadActivity } = await import("../windows/downloadWatch.ts");
 
 const S = () => useBrowser.getState();
 const PERSONAL = { id: "default", name: "Personal", color: "plum", icon: null, createdAt: 0 };
@@ -44,7 +46,64 @@ test("a download held for Keep or Discard opens the panel once", () => {
   assert.equal(takeDownloadsPanelCounts().downloads_panel_held_opens, 1);
 });
 
+test("the download island replaces the automatic panel, except for a download held for Keep or Discard", (t) => {
+  const previous = PLATFORM_FEATURES.downloadIsland;
+  PLATFORM_FEATURES.downloadIsland = true;
+  t.after(() => { PLATFORM_FEATURES.downloadIsland = previous; });
+  const w = oneWindow();
+  S().upsertDownload(download("island"));
+  assert.equal(isOpen(w), false);
+  toggleDownloadsOpen(w);
+  assert.equal(isOpen(w), true);
+  setDownloadsOpen(w, false);
+  S().upsertDownload(download("island", { dangerous: true }));
+  assert.equal(isOpen(w), true);
+});
+
 const pressAt = (timestamp) => ({ nativeEvent: { timestamp } });
+
+test("download notices announce starts and terminal states once, even when another download starts in between", (t) => {
+  const w = oneWindow();
+  S().upsertDownload(download("existing"));
+  const announced = [];
+  t.after(watchDownloadActivity(w, (id) => announced.push(id)));
+  S().upsertDownload(download("slow"));
+  S().upsertDownload(download("slow", { received: 1 }));
+  S().upsertDownload(download("fast"));
+  S().upsertDownload(download("slow", { state: "finished" }));
+  S().upsertDownload(download("fast", { state: "cancelled" }));
+  S().upsertDownload(download("existing", { state: "finished" }));
+  assert.deepEqual(announced, ["slow", "fast", "slow", "fast"]);
+});
+
+test("an interrupted download announces resumed progress and completion under the same ID", (t) => {
+  const w = oneWindow();
+  const announced = [];
+  t.after(watchDownloadActivity(w, (id) => {
+    announced.push([id, S().downloads.find((entry) => entry.id === id)?.state]);
+  }));
+  const file = download("resumed", { total: 100 });
+  S().upsertDownload(file);
+  S().upsertDownload({ ...file, state: "failed", received: 30 });
+  S().upsertDownload({ ...file, state: "failed", received: 30, speed: 1 });
+  S().upsertDownload({ ...file, received: 30 });
+  S().upsertDownload({ ...file, received: 75 });
+  S().upsertDownload({ ...file, state: "finished", received: 100 });
+  S().upsertDownload({ ...file, state: "finished", received: 100, speed: 1 });
+  const coalesced = download("resumed-completed", { total: 100 });
+  S().upsertDownload(coalesced);
+  S().upsertDownload({ ...coalesced, state: "failed", received: 30 });
+  S().upsertDownload({ ...coalesced, state: "finished", received: 100 });
+  assert.deepEqual(announced, [
+    [file.id, "downloading"],
+    [file.id, "failed"],
+    [file.id, "downloading"],
+    [file.id, "finished"],
+    [coalesced.id, "downloading"],
+    [coalesced.id, "failed"],
+    [coalesced.id, "finished"],
+  ]);
+});
 
 test("a press outside closes the panel, and the press that lands on the Downloads button doesn't reopen it", () => {
   const w = oneWindow();

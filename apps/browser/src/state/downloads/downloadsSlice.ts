@@ -1,6 +1,7 @@
 import type { StateCreator } from "zustand";
 import { shallow } from "zustand/shallow";
 import type { Download } from "../../platform/downloads";
+import { PLATFORM_FEATURES } from "../../lib/platformFeatures";
 import type { BrowserWindow } from "../browser/types";
 import type { BrowserState } from "../browser/store";
 import { engineProfile, isIncognitoProfile, privateSession } from "../browser/model";
@@ -80,7 +81,7 @@ export const createDownloadsSlice: StateCreator<BrowserState, [], [], DownloadsS
       const downloads = listed ? s.downloads.map((x) => (x.id === d.id ? record : x)) : [record, ...s.downloads].slice(0, MAX_DOWNLOADS);
       const focused = focusedWindowOf(s);
       const newlyHeld = awaitsKeep(d) && !s.downloads.some((x) => x.id === d.id && awaitsKeep(x));
-      const open = (!listed || newlyHeld) && focused && downloadVisibleIn(s, d, s.windows[focused]) && !s.windowUi[focused]?.downloadsOpen;
+      const open = (newlyHeld || (!listed && !PLATFORM_FEATURES.downloadIsland)) && focused && downloadVisibleIn(s, d, s.windows[focused]) && !s.windowUi[focused]?.downloadsOpen;
       if (open && newlyHeld) noteDownloadsPanel("heldOpen");
       return { downloads, ...(open ? patchWindowUi(s, focused, { downloadsOpen: true }) : {}) };
     });

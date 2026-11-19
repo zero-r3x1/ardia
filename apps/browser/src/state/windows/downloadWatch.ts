@@ -1,6 +1,7 @@
 import { openDownload } from "../downloads/openDownload";
 import { useBrowser, type BrowserState } from "../browser/store";
 import { downloadVisibleIn } from "../downloads/downloadsSlice";
+import { awaitsKeep } from "../downloads/status";
 import { focusedWindowOf } from "./ui";
 
 const openWhenDone = new Set<string>();
@@ -39,4 +40,26 @@ export function watchNewDownloads(windowId: string, onFresh: (download: BrowserS
     if (!fresh || focusedWindowOf(s) !== windowId || !downloadVisibleIn(s, fresh, s.windows[windowId])) return;
     onFresh(fresh);
   });
+}
+
+export function watchDownloadActivity(windowId: string, announce: (id: string) => void) {
+  const pending = new Map<string, "downloading" | "failed">();
+  const stopNew = watchNewDownloads(windowId, (download) => {
+    if (download.state === "downloading" || download.state === "failed") pending.set(download.id, download.state);
+    if (!awaitsKeep(download)) announce(download.id);
+  });
+  const stopUpdates = useBrowser.subscribe((s, prev) => {
+    if (s.downloads === prev.downloads || !pending.size) return;
+    for (const [id, previous] of pending) {
+      const download = s.downloads.find((row) => row.id === id);
+      if (download?.state === previous) continue;
+      if (download?.state === "downloading" || download?.state === "failed") pending.set(id, download.state);
+      else pending.delete(id);
+      if (download && !awaitsKeep(download) && downloadVisibleIn(s, download, s.windows[windowId])) announce(id);
+    }
+  });
+  return () => {
+    stopNew();
+    stopUpdates();
+  };
 }
