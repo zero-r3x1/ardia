@@ -275,6 +275,14 @@ export function sessionTabIds(s: BrowserState, windowId: string, sessionStart: n
   return fromSession.length >= 2 ? fromSession : fallback;
 }
 
+export function recentlyViewedTabIds(s: BrowserState, windowId: string): string[] {
+  const active = activeTabId(s, windowId);
+  const ids = recentTabIds(s, windowId, Date.now(), Infinity).filter((id) => !isAsleep(s.tabs[id]) && !isSleeping(id) && !isPageUnloaded(s, id));
+  const viewed = ids.filter((id) => id !== active && !s.tabs[id]!.unseen);
+  const unseen = ids.filter((id) => id !== active && s.tabs[id]!.unseen);
+  return [...ids.filter((id) => id === active), ...viewed, ...unseen];
+}
+
 const addCleanedBatch = (list: ClosedTab[], batch: ClosedTab[]) =>
   [...keptCleanedTabs(list), ...batch].slice(-Math.max(MAX_CLEANED, batch.length));
 

@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
+import { Image, Platform, Pressable, ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { tabTitle } from "../../state/browser/model";
 import { useTab } from "../../state/browser/hooks";
 import { useSidebarUi } from "../../state/sidebar/sidebarUi";
@@ -31,7 +31,7 @@ export function TabSwitcher({ windowId, windowWidth, windowHeight }: { windowId:
 
   if (!switcher) return null;
   const fits = Math.max(1, Math.floor((windowWidth - T.windowMargin - 2 * T.pad + T.gap) / (T.card + T.gap)));
-  const count = Math.min(fits, switcher.ids.length);
+  const count = Math.min(Platform.OS === "windows" ? Math.min(fits, 7) : fits, switcher.ids.length);
   const viewport = count * T.card + (count - 1) * T.gap;
   const width = 2 * T.pad + viewport;
   const height = 2 * T.pad + ROW_HEIGHT;

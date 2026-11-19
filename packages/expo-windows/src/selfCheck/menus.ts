@@ -56,6 +56,10 @@ export const checks: Check[] = [
       const active = await withinSeconds(5, "activeShortcuts", menus().activeShortcuts());
       expectEqual(active.newTab, [["t", "control"]], "newTab default");
       expectEqual(active["selectTab:1"], [["1", "control"]], "selectTab:1 default");
+      expectEqual(active["tabSwitcher:forward"], [["\t", "control"]], "recent tab switcher forward");
+      expectEqual(active["tabSwitcher:backward"], [["\t", "control", "shift"]], "recent tab switcher backward");
+      expectTrue(active.nextTab?.some(([key]) => key === String.fromCharCode(0xf72d)) && !active.nextTab.some(([key]) => key === "\t"), "Ctrl+Page Down remains separate from the switcher");
+      expectTrue(active.previousTab?.some(([key]) => key === String.fromCharCode(0xf72c)) && !active.previousTab.some(([key]) => key === "\t"), "Ctrl+Page Up remains separate from the switcher");
       expectEqual(active.reload, [["r", "control"], [String.fromCharCode(0xf708)]], "reload default");
       expectEqual(active["std:toggleFullScreen:"], [[String.fromCharCode(0xf70e)]], "full screen default");
       expectEqual(active["switchProfile:selfcheck-home"], [["1", "option"]], "first profile default");
@@ -76,13 +80,14 @@ export const checks: Check[] = [
   {
     name: "menus: rebinding keeps Mac defaults on their Windows keys and applies recorded keys",
     async run() {
-      const shortcuts = { newTab: [["t", "command"]], closeTab: [["e", "control", "shift"]], back: [] };
+      const shortcuts = { newTab: [["t", "command"]], closeTab: [["e", "control", "shift"]], back: [], "tabSwitcher:forward": [["r", "control", "option"]] };
       await withinSeconds(5, "setMenuState", menus().setMenuState(smallState({ shortcuts })));
       const active = await withinSeconds(5, "activeShortcuts", menus().activeShortcuts());
       await withinSeconds(5, "setMenuState", menus().setMenuState(smallState()));
       expectEqual(active.newTab, [["t", "control"]], "newTab bound to its Mac default");
       expectEqual(active.closeTab, [["e", "control", "shift"]], "closeTab rebound");
       expectEqual(active.back, [], "back unbound");
+      expectEqual(active["tabSwitcher:forward"], [["r", "control", "option"]], "tab switcher rebound");
     },
   },
   {

@@ -1,8 +1,9 @@
+import { Platform } from "react-native";
 import { setSwitcherCapture, switcherPointerMoved } from "../../platform/focus";
 import { useBrowser } from "../browser/store";
 import { activeTabId, viewTabIds } from "../browser/model";
 import { isPageUnloaded } from "../pins/pinShare";
-import { sessionTabIds } from "../pins/tabCleanup";
+import { recentlyViewedTabIds, sessionTabIds } from "../pins/tabCleanup";
 import { tabEngine } from "../engines/engines";
 import { isAsleep } from "../tabs/pageSession";
 import { isSleeping, useLifecycle } from "../tabs/sleepingTabs";
@@ -27,7 +28,7 @@ export function switcherStep(windowId: string, backward: boolean) {
   const current = sidebarUi().switcher;
   if (current && current.windowId === windowId) return moveSwitcher(backward ? -1 : 1);
   const s = useBrowser.getState();
-  const ids = sessionTabIds(s, windowId, SESSION_START);
+  const ids = Platform.OS === "windows" ? recentlyViewedTabIds(s, windowId) : sessionTabIds(s, windowId, SESSION_START);
   if (ids.length < 2) return;
   noteTabSwitcherOpened(viewTabIds(s, windowId).filter((id) => isAsleep(s.tabs[id])).length, ids.slice(0, 2).filter((id) => s.tabs[id]!.unseen).length);
   const from = activeTabId(s, windowId);

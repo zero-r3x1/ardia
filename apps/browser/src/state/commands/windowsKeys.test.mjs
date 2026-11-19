@@ -56,6 +56,13 @@ test("no two commands share a Windows default", () => {
   assert.deepEqual([...holders].filter(([, ids]) => ids.length > 1), []);
 });
 
+test("Ctrl+Tab opens the recent tab switcher and Page Up and Down keep tab order", () => {
+  assert.deepEqual(windowsDefaultKeys("tabSwitcher:forward"), ["Ctrl+Tab"]);
+  assert.deepEqual(windowsDefaultKeys("tabSwitcher:backward"), ["Ctrl+Shift+Tab"]);
+  assert.deepEqual(windowsDefaultKeys("nextTab"), ["Ctrl+Shift+]", "Ctrl+}", "Ctrl+PgDn"]);
+  assert.deepEqual(windowsDefaultKeys("previousTab"), ["Ctrl+Shift+[", "Ctrl+{", "Ctrl+PgUp"]);
+});
+
 test("Windows shortcuts read and print the way the native menus print them", () => {
   for (const keys of Object.values(WINDOWS_KEYS)) for (const key of keys) if (key !== null) assert.equal(formatWindowsShortcut(parseWindowsShortcut(key)), key);
   assert.deepEqual(parseWindowsShortcut("Ctrl+Shift+T"), { key: "t", modifiers: ["control", "shift"] });

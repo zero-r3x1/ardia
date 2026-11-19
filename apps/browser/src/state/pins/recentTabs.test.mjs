@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-const { recentTabIds, sessionTabIds } = await import("./tabCleanup.ts");
+const { recentTabIds, sessionTabIds, recentlyViewedTabIds } = await import("./tabCleanup.ts");
 const { useLifecycle } = await import("../tabs/sleepingTabs.ts");
 
 const HOUR = 60 * 60 * 1000;
@@ -61,4 +61,15 @@ test("unseen nested links stay beside their own opener", () => {
   );
   s.windows.w.activeTabIds = { p: "a" };
   assert.deepEqual(recentTabIds(s, "w", NOW), ["a", "link", "nested", "b"]);
+});
+
+test("the Windows switcher chooses the previous viewed tab even after a background tab was opened", () => {
+  const s = state(
+    tab("current", "loaded", 0),
+    tab("unseen", "loaded", 1, null, { unseen: true, openerId: "current", createdAt: NOW - 1 }),
+    tab("old", "loaded", 35 * HOUR),
+    tab("previous", "loaded", 25 * HOUR),
+    tab("closed", "asleep", 1, { as: "tile" }),
+  );
+  assert.deepEqual(recentlyViewedTabIds(s, "w"), ["current", "previous", "old", "unseen"]);
 });
